@@ -20,9 +20,6 @@ flutter run
 
 ## Vendored Codex Skills
 
-The requested Codex skills are committed under `codex-skills/` so they can sync
-with the repository:
-
 - `figma-generate-design`
 - `security-best-practices`
 - `security-threat-model`
