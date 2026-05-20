@@ -12,9 +12,8 @@ Stack:
 - Firebase Cloud Messaging
 
 Architecture:
-- Clean Architecture
-- Feature-first structure
-- Repository pattern
+- MVC Architecture
+
 
 State Management:
 - Riverpod
