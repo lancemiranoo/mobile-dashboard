@@ -25,7 +25,7 @@ class AuthController extends StateNotifier<AsyncValue<UserModel?>> {
   Future<void> register(String email, String password, String displayName) async {
     try {
       state = const AsyncValue.loading();
-      final user = await _repository.register(email, password, displayName);
+      await _repository.register(email, password, displayName);
       await _repository.logout(); // Sign out to force manual login
       state = const AsyncValue.data(null);
     } catch (e, st) {

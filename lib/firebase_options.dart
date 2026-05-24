@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -40,47 +41,47 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBQLj-JX-b-z5JMYYhRzFRilgCxrp-MBgA',
-    appId: '1:860615079429:web:5876da0c5fdf4d04238e6c',
-    messagingSenderId: '860615079429',
-    projectId: 'dashboard-aa18d',
-    authDomain: 'dashboard-aa18d.firebaseapp.com',
-    storageBucket: 'dashboard-aa18d.firebasestorage.app',
-  );
+  static FirebaseOptions get web => FirebaseOptions(
+        apiKey: dotenv.env['FIREBASE_WEB_API_KEY'] ?? '',
+        appId: dotenv.env['FIREBASE_WEB_APP_ID'] ?? '',
+        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'],
+        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+      );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBHdIZjWBLW21ytUdkFZ3HlJv5Tr0Wj58c',
-    appId: '1:860615079429:android:c11e306aeeacb3ac238e6c',
-    messagingSenderId: '860615079429',
-    projectId: 'dashboard-aa18d',
-    storageBucket: 'dashboard-aa18d.firebasestorage.app',
-  );
+  static FirebaseOptions get android => FirebaseOptions(
+        apiKey: dotenv.env['FIREBASE_ANDROID_API_KEY'] ?? '',
+        appId: dotenv.env['FIREBASE_ANDROID_APP_ID'] ?? '',
+        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+      );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBRrbf3ItuHEyEzb4iB9nJUAnI2JEj-Yfc',
-    appId: '1:860615079429:ios:01fefc686ceaca65238e6c',
-    messagingSenderId: '860615079429',
-    projectId: 'dashboard-aa18d',
-    storageBucket: 'dashboard-aa18d.firebasestorage.app',
-    iosBundleId: 'com.example.flutterApplication1',
-  );
+  static FirebaseOptions get ios => FirebaseOptions(
+        apiKey: dotenv.env['FIREBASE_IOS_API_KEY'] ?? '',
+        appId: dotenv.env['FIREBASE_IOS_APP_ID'] ?? '',
+        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+        iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'],
+      );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBRrbf3ItuHEyEzb4iB9nJUAnI2JEj-Yfc',
-    appId: '1:860615079429:ios:01fefc686ceaca65238e6c',
-    messagingSenderId: '860615079429',
-    projectId: 'dashboard-aa18d',
-    storageBucket: 'dashboard-aa18d.firebasestorage.app',
-    iosBundleId: 'com.example.flutterApplication1',
-  );
+  static FirebaseOptions get macos => FirebaseOptions(
+        apiKey: dotenv.env['FIREBASE_IOS_API_KEY'] ?? '',
+        appId: dotenv.env['FIREBASE_IOS_APP_ID'] ?? '',
+        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+        iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'],
+      );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBQLj-JX-b-z5JMYYhRzFRilgCxrp-MBgA',
-    appId: '1:860615079429:web:87aff79b30e7db90238e6c',
-    messagingSenderId: '860615079429',
-    projectId: 'dashboard-aa18d',
-    authDomain: 'dashboard-aa18d.firebaseapp.com',
-    storageBucket: 'dashboard-aa18d.firebasestorage.app',
-  );
+  static FirebaseOptions get windows => FirebaseOptions(
+        apiKey: dotenv.env['FIREBASE_WINDOWS_API_KEY'] ?? '',
+        appId: dotenv.env['FIREBASE_WINDOWS_APP_ID'] ?? '',
+        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'],
+        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+      );
 }
