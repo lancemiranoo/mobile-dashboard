@@ -7,7 +7,9 @@ final tradeRepositoryProvider = Provider<TradeRepository>((ref) {
   return TradeRepository(firestore: FirebaseFirestore.instance);
 });
 
-final tradeCollectionProvider = StreamProvider<List<TradeModel>>((ref) {
+final tradeCollectionProvider = StreamProvider.autoDispose<List<TradeModel>>((
+  ref,
+) {
   return ref.watch(tradeRepositoryProvider).watchTrades();
 });
 
