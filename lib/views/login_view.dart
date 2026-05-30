@@ -108,7 +108,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(
-                                  color: const Color.fromARGB(255, 0, 0, 0),
+                                  color: _AuthColors.mutedText,
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
@@ -219,7 +219,7 @@ class _AuthColors {
   static const primary = Color(0xFF101828);
   static const accent = Color(0xFF2563EB);
   static const bodyText = Color(0xFF1F2937);
-  static const mutedText = Color(0xFF667085);
+  static const mutedText = Color.fromARGB(255, 0, 0, 0);
   static const fieldText = Color(0xFF4B5563);
   static const divider = Color(0xFFE5E7EB);
 }
