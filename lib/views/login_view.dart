@@ -16,6 +16,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  String? _localErrorMessage;
 
   @override
   void dispose() {
@@ -25,11 +26,46 @@ class _LoginViewState extends ConsumerState<LoginView> {
   }
 
   void _login() {
-    if (_formKey.currentState!.validate()) {
-      ref
-          .read(authControllerProvider.notifier)
-          .login(_emailController.text.trim(), _passwordController.text);
+    ref.read(authControllerProvider.notifier).reset();
+
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
+      setState(() {
+        _localErrorMessage = 'Please fill up all fields.';
+      });
+      return;
     }
+
+    if (!_isValidEmail(_emailController.text.trim())) {
+      setState(() {
+        _localErrorMessage = 'Invalid email address.';
+      });
+      return;
+    }
+
+    setState(() {
+      _localErrorMessage = null;
+    });
+
+    ref
+        .read(authControllerProvider.notifier)
+        .login(_emailController.text.trim(), _passwordController.text);
+  }
+
+  void _clearLocalError() {
+    final authState = ref.read(authControllerProvider);
+
+    if (_localErrorMessage == null && !authState.hasError) {
+      return;
+    }
+
+    if (authState.hasError) {
+      ref.read(authControllerProvider.notifier).reset();
+    }
+
+    setState(() {
+      _localErrorMessage = null;
+    });
   }
 
   @override
@@ -41,6 +77,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
     });
 
     final authState = ref.watch(authControllerProvider);
+    final errorMessage =
+        _localErrorMessage ??
+        (authState.hasError ? 'Invalid sign in credentials.' : null);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -65,31 +104,37 @@ class _LoginViewState extends ConsumerState<LoginView> {
                           const _BrandLogo(size: 132),
                           const SizedBox(height: 20),
                           Text(
+                            'Wolf of Cavite',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  color: const Color.fromARGB(255, 0, 0, 0),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          Text(
                             'Welcome!',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(
                                   color: _AuthColors.accent,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                 ),
                           ),
-                          const SizedBox(height: 28),
-                          Text(
-                            'Sign in to dashboard.',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(color: _AuthColors.mutedText),
-                          ),
+                          // const SizedBox(height: 28),
+                          // Text(
+                          //   'Sign in to dashboard.',
+                          //   textAlign: TextAlign.center,
+                          //   style: Theme.of(context).textTheme.bodyLarge
+                          //       ?.copyWith(color: _AuthColors.mutedText),
+                          // ),
                           const SizedBox(height: 42),
                           _AuthTextField(
                             controller: _emailController,
                             hintText: 'Email Address',
                             icon: Icons.mail_outline_rounded,
                             keyboardType: TextInputType.emailAddress,
-                            validator: (value) =>
-                                value == null || value.trim().isEmpty
-                                ? 'Enter email'
-                                : null,
+                            onChanged: (_) => _clearLocalError(),
                           ),
                           const SizedBox(height: 20),
                           _AuthTextField(
@@ -109,10 +154,16 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                     : Icons.visibility_rounded,
                               ),
                             ),
-                            validator: (value) => value == null || value.isEmpty
-                                ? 'Enter password'
-                                : null,
+                            onChanged: (_) => _clearLocalError(),
                           ),
+                          if (errorMessage != null) ...[
+                            const SizedBox(height: 16),
+                            Text(
+                              errorMessage,
+                              style: const TextStyle(color: Colors.red),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                           const SizedBox(height: 26),
                           Text(
                             'Forgot your password?',
@@ -131,14 +182,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               label: 'Sign in',
                               onPressed: _login,
                             ),
-                          if (authState.hasError) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              'Error: ${authState.error}',
-                              style: const TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+
                           const SizedBox(height: 28),
                           Text(
                             'OR',
@@ -152,7 +196,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
                           const SizedBox(height: 28),
                           _OutlineAuthButton(
                             label: 'Create new account',
-                            onPressed: () => context.push('/register'),
+                            onPressed: () {
+                              ref.read(authControllerProvider.notifier).reset();
+                              context.go('/register');
+                            },
                           ),
                         ],
                       ),
@@ -202,7 +249,7 @@ class _AuthTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
-  final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
 
   const _AuthTextField({
     required this.controller,
@@ -211,7 +258,7 @@ class _AuthTextField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
-    this.validator,
+    this.onChanged,
   });
 
   @override
@@ -220,7 +267,7 @@ class _AuthTextField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      validator: validator,
+      onChanged: onChanged,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
         color: _AuthColors.fieldText,
         fontWeight: FontWeight.w400,
@@ -308,4 +355,8 @@ class _OutlineAuthButton extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _isValidEmail(String email) {
+  return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email);
 }

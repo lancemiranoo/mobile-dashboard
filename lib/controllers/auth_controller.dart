@@ -2,15 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
 
-final authControllerProvider = StateNotifierProvider<AuthController, AsyncValue<UserModel?>>((ref) {
-  final repository = ref.watch(authRepositoryProvider);
-  return AuthController(repository);
-});
+final authControllerProvider =
+    StateNotifierProvider<AuthController, AsyncValue<UserModel?>>((ref) {
+      final repository = ref.watch(authRepositoryProvider);
+      return AuthController(repository);
+    });
 
 class AuthController extends StateNotifier<AsyncValue<UserModel?>> {
   final AuthRepository _repository;
 
   AuthController(this._repository) : super(const AsyncValue.data(null));
+
+  void reset() {
+    state = const AsyncValue.data(null);
+  }
 
   Future<void> login(String email, String password) async {
     try {
@@ -22,7 +27,11 @@ class AuthController extends StateNotifier<AsyncValue<UserModel?>> {
     }
   }
 
-  Future<void> register(String email, String password, String displayName) async {
+  Future<void> register(
+    String email,
+    String password,
+    String displayName,
+  ) async {
     try {
       state = const AsyncValue.loading();
       await _repository.register(email, password, displayName);

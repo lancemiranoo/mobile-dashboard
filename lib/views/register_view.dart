@@ -19,6 +19,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String? _localErrorMessage;
 
   @override
   void dispose() {
@@ -30,34 +31,86 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   }
 
   Future<void> _register() async {
-    if (_formKey.currentState!.validate()) {
-      await ref
-          .read(authControllerProvider.notifier)
-          .register(
-            _emailController.text.trim(),
-            _passwordController.text,
-            _displayNameController.text.trim(),
-          );
+    ref.read(authControllerProvider.notifier).reset();
 
-      final authState = ref.read(authControllerProvider);
-      if (!authState.hasError && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful! Please login.'),
-          ),
+    if (_displayNameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty) {
+      setState(() {
+        _localErrorMessage = 'Please fill up all fields.';
+      });
+      return;
+    }
+
+    if (!_isValidEmail(_emailController.text.trim())) {
+      setState(() {
+        _localErrorMessage = 'Invalid email address.';
+      });
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _localErrorMessage = 'Passwords do not match.';
+      });
+      return;
+    }
+
+    if (_passwordController.text.length < 6) {
+      setState(() {
+        _localErrorMessage = 'Password must be at least 6 characters.';
+      });
+      return;
+    }
+
+    setState(() {
+      _localErrorMessage = null;
+    });
+
+    await ref
+        .read(authControllerProvider.notifier)
+        .register(
+          _emailController.text.trim(),
+          _passwordController.text,
+          _displayNameController.text.trim(),
         );
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/login');
-        }
+
+    final authState = ref.read(authControllerProvider);
+    if (!authState.hasError && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration successful! Please login.')),
+      );
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/login');
       }
     }
+  }
+
+  void _clearLocalError() {
+    final authState = ref.read(authControllerProvider);
+
+    if (_localErrorMessage == null && !authState.hasError) {
+      return;
+    }
+
+    if (authState.hasError) {
+      ref.read(authControllerProvider.notifier).reset();
+    }
+
+    setState(() {
+      _localErrorMessage = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    final errorMessage =
+        _localErrorMessage ??
+        (authState.hasError ? 'Unable to create account.' : null);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -79,7 +132,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const _BrandLogo(size: 150),
+                          // const _BrandLogo(size: 150),
                           const SizedBox(height: 24),
                           Text(
                             'Create an Account',
@@ -92,7 +145,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                           ),
                           const SizedBox(height: 36),
                           Text(
-                            'Create an account to access your trading dashboard.',
+                            'Create an account to access your dashboard.',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(color: _AuthColors.mutedText),
@@ -102,10 +155,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                             controller: _displayNameController,
                             hintText: 'Name',
                             icon: Icons.person_outline_rounded,
-                            validator: (value) =>
-                                value == null || value.trim().isEmpty
-                                ? 'Enter display name'
-                                : null,
+                            onChanged: (_) => _clearLocalError(),
                           ),
                           const SizedBox(height: 20),
                           _AuthTextField(
@@ -113,10 +163,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                             hintText: 'Email Address',
                             icon: Icons.mail_outline_rounded,
                             keyboardType: TextInputType.emailAddress,
-                            validator: (value) =>
-                                value == null || value.trim().isEmpty
-                                ? 'Enter email'
-                                : null,
+                            onChanged: (_) => _clearLocalError(),
                           ),
                           const SizedBox(height: 20),
                           _AuthTextField(
@@ -136,10 +183,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                                     : Icons.visibility_rounded,
                               ),
                             ),
-                            validator: (value) =>
-                                value == null || value.length < 6
-                                ? 'Password must be at least 6 characters'
-                                : null,
+                            onChanged: (_) => _clearLocalError(),
                           ),
                           const SizedBox(height: 20),
                           _AuthTextField(
@@ -160,18 +204,16 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                                     : Icons.visibility_rounded,
                               ),
                             ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Confirm your password';
-                              }
-
-                              if (value != _passwordController.text) {
-                                return 'Passwords do not match';
-                              }
-
-                              return null;
-                            },
+                            onChanged: (_) => _clearLocalError(),
                           ),
+                          if (errorMessage != null) ...[
+                            const SizedBox(height: 16),
+                            Text(
+                              errorMessage,
+                              style: const TextStyle(color: Colors.red),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                           const SizedBox(height: 44),
                           if (authState.isLoading)
                             const Center(child: CircularProgressIndicator())
@@ -180,14 +222,6 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               label: 'Register',
                               onPressed: _register,
                             ),
-                          if (authState.hasError) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              'Error: ${authState.error}',
-                              style: const TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
                           const SizedBox(height: 28),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -198,7 +232,12 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                                     ?.copyWith(color: _AuthColors.bodyText),
                               ),
                               GestureDetector(
-                                onTap: () => context.go('/login'),
+                                onTap: () {
+                                  ref
+                                      .read(authControllerProvider.notifier)
+                                      .reset();
+                                  context.go('/login');
+                                },
                                 child: Text(
                                   'Sign In',
                                   style: Theme.of(context).textTheme.bodyLarge
@@ -233,23 +272,23 @@ class _AuthColors {
   static const divider = Color(0xFFE5E7EB);
 }
 
-class _BrandLogo extends StatelessWidget {
-  final double size;
+// class _BrandLogo extends StatelessWidget {
+//   final double size;
 
-  const _BrandLogo({required this.size});
+//   const _BrandLogo({required this.size});
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Image.asset(
-        'assets/images/wolf_of_cavite.png',
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//       child: Image.asset(
+//         'assets/images/wolf_of_cavite.png',
+//         width: size,
+//         height: size,
+//         fit: BoxFit.contain,
+//       ),
+//     );
+//   }
+// }
 
 class _AuthTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -258,7 +297,7 @@ class _AuthTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
-  final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
 
   const _AuthTextField({
     required this.controller,
@@ -267,7 +306,7 @@ class _AuthTextField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
-    this.validator,
+    this.onChanged,
   });
 
   @override
@@ -276,7 +315,7 @@ class _AuthTextField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      validator: validator,
+      onChanged: onChanged,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
         color: _AuthColors.fieldText,
         fontWeight: FontWeight.w400,
@@ -335,4 +374,8 @@ class _PrimaryAuthButton extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _isValidEmail(String email) {
+  return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email);
 }
