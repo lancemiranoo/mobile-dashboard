@@ -14,7 +14,7 @@ class TradeHistoryView extends ConsumerWidget {
     final tradesAsync = ref.watch(tradeCollectionProvider);
 
     return tradesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const _HistorySkeleton(),
       error: (error, stackTrace) => _HistoryError(error: error),
       data: (trades) => LayoutBuilder(
         builder: (context, constraints) {
@@ -82,6 +82,78 @@ class _HistoryError extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistorySkeleton extends StatelessWidget {
+  const _HistorySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width >= 680;
+    final horizontalPadding = isTablet ? 28.0 : 16.0;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        16,
+        horizontalPadding,
+        28,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1180),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SkeletonBox(width: 190, height: 30),
+              const SizedBox(height: 16),
+              _Panel(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(18, 18, 18, 8),
+                      child: Row(
+                        children: [
+                          _SkeletonBox(width: 160, height: 18),
+                          Spacer(),
+                          _SkeletonBox(width: 74, height: 14),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      child: Column(
+                        children: List.generate(
+                          isTablet ? 8 : 5,
+                          (index) => const Padding(
+                            padding: EdgeInsets.only(bottom: 10),
+                            child: _SkeletonBox(height: 58),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      child: Row(
+                        children: [
+                          _SkeletonBox(width: 90, height: 14),
+                          Spacer(),
+                          _SkeletonBox(width: 44, height: 44),
+                          SizedBox(width: 8),
+                          _SkeletonBox(width: 44, height: 44),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -428,6 +500,27 @@ class _Panel extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  final double? width;
+  final double height;
+
+  const _SkeletonBox({this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: width ?? double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(8),
+      ),
     );
   }
 }

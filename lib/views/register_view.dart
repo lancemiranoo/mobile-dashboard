@@ -206,15 +206,9 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                             ),
                             onChanged: (_) => _clearLocalError(),
                           ),
-                          if (errorMessage != null) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              errorMessage,
-                              style: const TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                          const SizedBox(height: 44),
+                          const SizedBox(height: 16),
+                          _AuthErrorLine(message: errorMessage),
+                          const SizedBox(height: 20),
                           if (authState.isLoading)
                             const Center(child: CircularProgressIndicator())
                           else
@@ -340,6 +334,30 @@ class _AuthTextField extends StatelessWidget {
         ),
         focusedErrorBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthErrorLine extends StatelessWidget {
+  final String? message;
+
+  const _AuthErrorLine({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 24,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 150),
+        child: Text(
+          message ?? '',
+          key: ValueKey(message ?? ''),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.red, fontSize: 14),
+          textAlign: TextAlign.center,
         ),
       ),
     );

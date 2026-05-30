@@ -24,7 +24,7 @@ class HomeView extends ConsumerWidget {
     });
 
     return tradesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const _DashboardSkeleton(),
       error: (error, stackTrace) => _DashboardError(error: error),
       data: (trades) => LayoutBuilder(
         builder: (context, constraints) {
@@ -74,7 +74,7 @@ class TradeAnalytics {
   final double weeklyProfitLoss;
   final double dailyProfitLoss;
   final double winRate;
-  final List<double> equityCurve;
+  final List<ChannelWinRate> channelWinRates;
 
   const TradeAnalytics({
     required this.totalTrades,
@@ -84,7 +84,7 @@ class TradeAnalytics {
     required this.weeklyProfitLoss,
     required this.dailyProfitLoss,
     required this.winRate,
-    required this.equityCurve,
+    required this.channelWinRates,
   });
 
   factory TradeAnalytics.fromTrades(List<TradeModel> trades) {
@@ -100,20 +100,6 @@ class TradeAnalytics {
         status: trades.where((trade) => trade.status == status).length,
     };
 
-    final sortedTrades = [...trades]
-      ..sort(
-        (a, b) => (a.timestamp ?? a.uploadedAt ?? DateTime(0)).compareTo(
-          b.timestamp ?? b.uploadedAt ?? DateTime(0),
-        ),
-      );
-    var runningProfitLoss = 0.0;
-    final equityCurve = <double>[0];
-
-    for (final trade in sortedTrades) {
-      runningProfitLoss += trade.netResult;
-      equityCurve.add(runningProfitLoss);
-    }
-
     return TradeAnalytics(
       totalTrades: trades.length,
       openTrades: statusCounts[TradeStatus.open] ?? 0,
@@ -122,9 +108,23 @@ class TradeAnalytics {
       weeklyProfitLoss: _sumTradesSince(trades, weekStart),
       dailyProfitLoss: _sumTradesSince(trades, today),
       winRate: closedTrades.isEmpty ? 0 : winners / closedTrades.length * 100,
-      equityCurve: equityCurve,
+      channelWinRates: _buildChannelWinRates(closedTrades),
     );
   }
+}
+
+class ChannelWinRate {
+  final String channel;
+  final int wins;
+  final int total;
+
+  const ChannelWinRate({
+    required this.channel,
+    required this.wins,
+    required this.total,
+  });
+
+  double get rate => total == 0 ? 0 : wins / total * 100;
 }
 
 class _DashboardHeader extends StatelessWidget {
@@ -228,6 +228,91 @@ class _DashboardError extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardSkeleton extends StatelessWidget {
+  const _DashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width >= 680;
+    final horizontalPadding = isTablet ? 28.0 : 16.0;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        16,
+        horizontalPadding,
+        28,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1180),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SkeletonBox(height: 74),
+              const SizedBox(height: 20),
+              _Panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    _SkeletonBox(width: 170, height: 18),
+                    SizedBox(height: 22),
+                    _SkeletonBox(height: 220),
+                    SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(child: _SkeletonBox(height: 42)),
+                        SizedBox(width: 12),
+                        Expanded(child: _SkeletonBox(height: 42)),
+                        SizedBox(width: 12),
+                        Expanded(child: _SkeletonBox(height: 42)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              GridView.builder(
+                itemCount: 4,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: isTablet ? 4 : 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: isTablet ? 1.45 : 1.08,
+                ),
+                itemBuilder: (context, index) {
+                  return const _Panel(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _SkeletonBox(width: 36, height: 36),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SkeletonBox(width: 84, height: 12),
+                            SizedBox(height: 8),
+                            _SkeletonBox(width: 110, height: 22),
+                            SizedBox(height: 8),
+                            _SkeletonBox(width: 96, height: 10),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -401,51 +486,49 @@ class _PerformancePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _PanelHeader(
-            title: 'Performance Curve',
+            title: 'Channel Win Rate',
             action: _StatusPill(
-              label: analytics.totalProfitLoss >= 0 ? 'Profitable' : 'Drawdown',
-              color: analytics.totalProfitLoss >= 0
-                  ? Colors.teal
-                  : Colors.deepOrange,
+              label: '${analytics.closedTrades} closed',
+              color: Colors.blueGrey,
             ),
           ),
           const SizedBox(height: 20),
           SizedBox(
-            height: 190,
+            height: 220,
             width: double.infinity,
             child: CustomPaint(
-              painter: _LineChartPainter(
-                values: analytics.equityCurve,
-                lineColor: analytics.totalProfitLoss >= 0
-                    ? Colors.teal
-                    : Colors.deepOrange,
+              painter: _ColumnChartPainter(
+                values: analytics.channelWinRates,
+                barColor: colorScheme.primary,
                 gridColor: colorScheme.outlineVariant.withValues(alpha: 0.7),
+                labelColor: colorScheme.onSurfaceVariant,
+                valueColor: colorScheme.onSurface,
               ),
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _InlineStat(
-                  label: 'Trades',
-                  value: analytics.totalTrades.toString(),
-                ),
-              ),
-              Expanded(
-                child: _InlineStat(
-                  label: 'Open',
-                  value: analytics.openTrades.toString(),
-                ),
-              ),
-              Expanded(
-                child: _InlineStat(
-                  label: 'Closed',
-                  value: analytics.closedTrades.toString(),
-                ),
-              ),
-            ],
-          ),
+          // const SizedBox(height: 18),
+          // Row(
+          //   children: [
+          // Expanded(
+          //   child: _InlineStat(
+          //     label: 'Trades',
+          //     value: analytics.totalTrades.toString(),
+          //   ),
+          // ),
+          // Expanded(
+          //   child: _InlineStat(
+          //     label: 'Open',
+          //     value: analytics.openTrades.toString(),
+          //   ),
+          // ),
+          // Expanded(
+          //   child: _InlineStat(
+          //     label: 'Closed',
+          //     value: analytics.closedTrades.toString(),
+          //   ),
+          // ),
+          //   ],
+          // ),
         ],
       ),
     );
@@ -477,6 +560,27 @@ class _Panel extends StatelessWidget {
   }
 }
 
+class _SkeletonBox extends StatelessWidget {
+  final double? width;
+  final double height;
+
+  const _SkeletonBox({this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: width ?? double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+}
+
 class _PanelHeader extends StatelessWidget {
   final String title;
   final Widget? action;
@@ -501,36 +605,36 @@ class _PanelHeader extends StatelessWidget {
   }
 }
 
-class _InlineStat extends StatelessWidget {
-  final String label;
-  final String value;
+// class _InlineStat extends StatelessWidget {
+//   final String label;
+//   final String value;
 
-  const _InlineStat({required this.label, required this.value});
+//   const _InlineStat({required this.label, required this.value});
 
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+//   @override
+//   Widget build(BuildContext context) {
+//     final colorScheme = Theme.of(context).colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-      ],
-    );
-  }
-}
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text(
+//           label,
+//           style: Theme.of(
+//             context,
+//           ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+//         ),
+//         const SizedBox(height: 4),
+//         Text(
+//           value,
+//           style: Theme.of(
+//             context,
+//           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+//         ),
+//       ],
+//     );
+//   }
+// }
 
 class _StatusPill extends StatelessWidget {
   final String label;
@@ -557,27 +661,24 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _LineChartPainter extends CustomPainter {
-  final List<double> values;
-  final Color lineColor;
+class _ColumnChartPainter extends CustomPainter {
+  final List<ChannelWinRate> values;
+  final Color barColor;
   final Color gridColor;
+  final Color labelColor;
+  final Color valueColor;
 
-  const _LineChartPainter({
+  const _ColumnChartPainter({
     required this.values,
-    required this.lineColor,
+    required this.barColor,
     required this.gridColor,
+    required this.labelColor,
+    required this.valueColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (values.length < 2) {
-      return;
-    }
-
-    final minValue = values.reduce(math.min);
-    final maxValue = values.reduce(math.max);
-    final range = maxValue == minValue ? 1 : maxValue - minValue;
-    final chartRect = Rect.fromLTWH(0, 8, size.width, size.height - 16);
+    final chartRect = Rect.fromLTWH(0, 20, size.width, size.height - 58);
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
@@ -591,53 +692,80 @@ class _LineChartPainter extends CustomPainter {
       );
     }
 
-    final path = Path();
-
-    for (var index = 0; index < values.length; index++) {
-      final x =
-          chartRect.left + chartRect.width * (index / (values.length - 1));
-      final normalized = (values[index] - minValue) / range;
-      final y = chartRect.bottom - chartRect.height * normalized;
-      final point = Offset(x, y);
-
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
-      }
+    if (values.isEmpty) {
+      _drawCenteredText(
+        canvas,
+        chartRect.center,
+        'No closed trades yet',
+        labelColor,
+        13,
+        FontWeight.w700,
+      );
+      return;
     }
 
-    final fillPath = Path.from(path)
-      ..lineTo(chartRect.right, chartRect.bottom)
-      ..lineTo(chartRect.left, chartRect.bottom)
-      ..close();
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          lineColor.withValues(alpha: 0.24),
-          lineColor.withValues(alpha: 0.02),
-        ],
-      ).createShader(chartRect);
+    final visibleValues = values.take(6).toList();
+    final slotWidth = chartRect.width / visibleValues.length;
+    final barPaint = Paint()..color = barColor;
+    final barBackgroundPaint = Paint()
+      ..color = barColor.withValues(alpha: 0.08);
 
-    canvas.drawPath(fillPath, fillPaint);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = lineColor
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..strokeWidth = 3,
-    );
+    for (var index = 0; index < visibleValues.length; index++) {
+      final item = visibleValues[index];
+      final barWidth = math.min(42.0, slotWidth * 0.46);
+      final centerX = chartRect.left + slotWidth * index + slotWidth / 2;
+      final barLeft = centerX - barWidth / 2;
+      final barHeight = chartRect.height * (item.rate / 100).clamp(0, 1);
+      final fullBarRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(barLeft, chartRect.top, barWidth, chartRect.height),
+        const Radius.circular(8),
+      );
+      final valueBarRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          barLeft,
+          chartRect.bottom - barHeight,
+          barWidth,
+          barHeight,
+        ),
+        const Radius.circular(8),
+      );
+
+      canvas.drawRRect(fullBarRect, barBackgroundPaint);
+      canvas.drawRRect(valueBarRect, barPaint);
+      _drawCenteredText(
+        canvas,
+        Offset(centerX, chartRect.top - 10),
+        '${item.rate.toStringAsFixed(0)}%',
+        valueColor,
+        12,
+        FontWeight.w800,
+      );
+      _drawCenteredText(
+        canvas,
+        Offset(centerX, chartRect.bottom + 16),
+        _compactChannelLabel(item.channel),
+        labelColor,
+        11,
+        FontWeight.w700,
+      );
+      _drawCenteredText(
+        canvas,
+        Offset(centerX, chartRect.bottom + 32),
+        '${item.wins}/${item.total}',
+        labelColor,
+        10,
+        FontWeight.w600,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _LineChartPainter oldDelegate) {
+  bool shouldRepaint(covariant _ColumnChartPainter oldDelegate) {
     return oldDelegate.values != values ||
-        oldDelegate.lineColor != lineColor ||
-        oldDelegate.gridColor != gridColor;
+        oldDelegate.barColor != barColor ||
+        oldDelegate.gridColor != gridColor ||
+        oldDelegate.labelColor != labelColor ||
+        oldDelegate.valueColor != valueColor;
   }
 }
 
@@ -663,4 +791,77 @@ double _sumTradesSince(List<TradeModel> trades, DateTime startDate) {
         return tradeDate != null && !tradeDate.isBefore(startDate);
       })
       .fold(0.0, (sum, trade) => sum + trade.netResult);
+}
+
+List<ChannelWinRate> _buildChannelWinRates(List<TradeModel> closedTrades) {
+  final totalsByChannel = <String, int>{};
+  final winsByChannel = <String, int>{};
+
+  for (final trade in closedTrades) {
+    final channel = trade.channel.trim().isEmpty ? 'Unknown' : trade.channel;
+    final isWin =
+        trade.result.toLowerCase().contains('win') || trade.netResult > 0;
+
+    totalsByChannel.update(channel, (value) => value + 1, ifAbsent: () => 1);
+    if (isWin) {
+      winsByChannel.update(channel, (value) => value + 1, ifAbsent: () => 1);
+    }
+  }
+
+  final winRates =
+      totalsByChannel.entries.map((entry) {
+        return ChannelWinRate(
+          channel: entry.key,
+          wins: winsByChannel[entry.key] ?? 0,
+          total: entry.value,
+        );
+      }).toList()..sort((a, b) {
+        final rateComparison = b.rate.compareTo(a.rate);
+        if (rateComparison != 0) {
+          return rateComparison;
+        }
+
+        return b.total.compareTo(a.total);
+      });
+
+  return winRates;
+}
+
+String _compactChannelLabel(String label) {
+  final normalized = label.trim();
+  if (normalized.length <= 10) {
+    return normalized;
+  }
+
+  return '${normalized.substring(0, 9)}…';
+}
+
+void _drawCenteredText(
+  Canvas canvas,
+  Offset center,
+  String text,
+  Color color,
+  double fontSize,
+  FontWeight fontWeight,
+) {
+  final textPainter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+      ),
+    ),
+    textAlign: TextAlign.center,
+    textDirection: TextDirection.ltr,
+  )..layout();
+
+  textPainter.paint(
+    canvas,
+    Offset(
+      center.dx - textPainter.width / 2,
+      center.dy - textPainter.height / 2,
+    ),
+  );
 }

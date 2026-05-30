@@ -156,15 +156,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
                             ),
                             onChanged: (_) => _clearLocalError(),
                           ),
-                          if (errorMessage != null) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              errorMessage,
-                              style: const TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                          const SizedBox(height: 26),
+                          const SizedBox(height: 16),
+                          _AuthErrorLine(message: errorMessage),
+                          const SizedBox(height: 2),
                           Text(
                             'Forgot your password?',
                             textAlign: TextAlign.center,
@@ -292,6 +286,30 @@ class _AuthTextField extends StatelessWidget {
         ),
         focusedErrorBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthErrorLine extends StatelessWidget {
+  final String? message;
+
+  const _AuthErrorLine({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 24,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 150),
+        child: Text(
+          message ?? '',
+          key: ValueKey(message ?? ''),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.red, fontSize: 14),
+          textAlign: TextAlign.center,
         ),
       ),
     );
