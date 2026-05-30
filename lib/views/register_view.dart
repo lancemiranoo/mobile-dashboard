@@ -145,7 +145,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                           ),
                           const SizedBox(height: 36),
                           Text(
-                            'Create an account to access your dashboard.',
+                            'Create an account to access dashboard.',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(color: _AuthColors.mutedText),
