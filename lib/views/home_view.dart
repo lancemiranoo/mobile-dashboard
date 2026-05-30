@@ -23,6 +23,14 @@ class HomeView extends ConsumerWidget {
       }
     });
 
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
+
+    final displayName = user.displayName.trim().isEmpty
+        ? user.email
+        : user.displayName.trim();
+
     return tradesAsync.when(
       loading: () => const _DashboardSkeleton(),
       error: (error, stackTrace) => _DashboardError(error: error),
@@ -46,7 +54,7 @@ class HomeView extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _DashboardHeader(
-                      displayName: user?.displayName ?? 'Trader',
+                      displayName: displayName,
                       onLogout: () {
                         ref.read(authControllerProvider.notifier).logout();
                       },
