@@ -23,62 +23,44 @@ class HomeView extends ConsumerWidget {
       }
     });
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Trade Analytics Dashboard'),
-        centerTitle: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton.filledTonal(
-              tooltip: 'Log out',
-              icon: const Icon(Icons.logout_rounded),
-              onPressed: () {
-                ref.read(authControllerProvider.notifier).logout();
-              },
-            ),
-          ),
-        ],
-      ),
-      body: tradesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => _DashboardError(error: error),
-        data: (trades) => LayoutBuilder(
-          builder: (context, constraints) {
-            final analytics = TradeAnalytics.fromTrades(trades);
-            final isTablet = constraints.maxWidth >= 680;
-            final horizontalPadding = isTablet ? 28.0 : 16.0;
+    return tradesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => _DashboardError(error: error),
+      data: (trades) => LayoutBuilder(
+        builder: (context, constraints) {
+          final analytics = TradeAnalytics.fromTrades(trades);
+          final isTablet = constraints.maxWidth >= 680;
+          final horizontalPadding = isTablet ? 28.0 : 16.0;
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                12,
-                horizontalPadding,
-                28,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1180),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _DashboardHeader(
-                        displayName: user?.displayName ?? 'Trader',
-                      ),
-                      const SizedBox(height: 20),
-                      _PerformancePanel(analytics: analytics),
-                      const SizedBox(height: 20),
-                      _MetricGrid(analytics: analytics, isTablet: isTablet),
-                      const SizedBox(height: 20),
-                      _TradeCollectionPanel(trades: trades, isTablet: isTablet),
-                    ],
-                  ),
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              16,
+              horizontalPadding,
+              28,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1180),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DashboardHeader(
+                      displayName: user?.displayName ?? 'Trader',
+                      onLogout: () {
+                        ref.read(authControllerProvider.notifier).logout();
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _PerformancePanel(analytics: analytics),
+                    const SizedBox(height: 20),
+                    _MetricGrid(analytics: analytics, isTablet: isTablet),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -147,8 +129,9 @@ class TradeAnalytics {
 
 class _DashboardHeader extends StatelessWidget {
   final String displayName;
+  final VoidCallback onLogout;
 
-  const _DashboardHeader({required this.displayName});
+  const _DashboardHeader({required this.displayName, required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -157,10 +140,10 @@ class _DashboardHeader extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: colorScheme.primaryContainer,
+        color: colorScheme.primary,
       ),
       child: Row(
         children: [
@@ -169,29 +152,44 @@ class _DashboardHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Good session, $displayName',
-                  style: textTheme.headlineSmall?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
+                  'BOT DASHBOARD',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onPrimary.withValues(alpha: 0.78),
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                // const SizedBox(height: 8),
-                // Text(
-                //   'Monitor exposure, realized performance, and active trade risk from one focused workspace.',
-                //   style: textTheme.bodyMedium?.copyWith(
-                //     color: colorScheme.onPrimaryContainer.withValues(
-                //       alpha: 0.78,
-                //     ),
-                //   ),
-                // ),
+                const SizedBox(height: 2),
+                Text(
+                  'Good day, $displayName!',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          Icon(
-            Icons.query_stats_rounded,
-            size: 42,
-            color: colorScheme.onPrimaryContainer,
+          Tooltip(
+            message: 'Log out',
+            child: Material(
+              color: colorScheme.tertiaryContainer,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onLogout,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: colorScheme.onTertiaryContainer,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -454,321 +452,6 @@ class _PerformancePanel extends StatelessWidget {
   }
 }
 
-class _TradeCollectionPanel extends StatefulWidget {
-  final List<TradeModel> trades;
-  final bool isTablet;
-
-  const _TradeCollectionPanel({required this.trades, required this.isTablet});
-
-  @override
-  State<_TradeCollectionPanel> createState() => _TradeCollectionPanelState();
-}
-
-class _TradeCollectionPanelState extends State<_TradeCollectionPanel> {
-  int _pageIndex = 0;
-
-  int get _pageSize => widget.isTablet ? 8 : 5;
-
-  int get _pageCount {
-    if (widget.trades.isEmpty) {
-      return 1;
-    }
-
-    return (widget.trades.length / _pageSize).ceil();
-  }
-
-  @override
-  void didUpdateWidget(covariant _TradeCollectionPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (_pageIndex >= _pageCount) {
-      _pageIndex = _pageCount - 1;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final startIndex = widget.trades.isEmpty ? 0 : _pageIndex * _pageSize;
-    final endIndex = math.min(startIndex + _pageSize, widget.trades.length);
-    final visibleTrades = widget.trades.sublist(startIndex, endIndex);
-
-    return _Panel(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-            child: _PanelHeader(
-              title: 'Trade Collection',
-              action: _PaginationSummary(
-                start: startIndex + (widget.trades.isEmpty ? 0 : 1),
-                end: endIndex,
-                total: widget.trades.length,
-              ),
-            ),
-          ),
-          if (widget.isTablet)
-            _TradeTable(trades: visibleTrades)
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-              child: Column(
-                children: visibleTrades.map((trade) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _TradeListTile(trade: trade),
-                  );
-                }).toList(),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: _PaginationControls(
-              pageIndex: _pageIndex,
-              pageCount: _pageCount,
-              onPrevious: _pageIndex == 0
-                  ? null
-                  : () {
-                      setState(() {
-                        _pageIndex--;
-                      });
-                    },
-              onNext: _pageIndex >= _pageCount - 1
-                  ? null
-                  : () {
-                      setState(() {
-                        _pageIndex++;
-                      });
-                    },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TradeTable extends StatelessWidget {
-  final List<TradeModel> trades;
-
-  const _TradeTable({required this.trades});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingTextStyle: Theme.of(
-          context,
-        ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
-        columns: const [
-          DataColumn(label: Text('Trade')),
-          DataColumn(label: Text('Side')),
-          DataColumn(label: Text('Status')),
-          DataColumn(label: Text('Price'), numeric: true),
-          DataColumn(label: Text('TP / SL'), numeric: true),
-          DataColumn(label: Text('Result'), numeric: true),
-        ],
-        rows: trades.map((trade) {
-          return DataRow(
-            cells: [
-              DataCell(_TradeIdentity(trade: trade)),
-              DataCell(_DirectionPill(direction: trade.direction)),
-              DataCell(
-                _StatusPill(
-                  label: trade.statusLabel.isEmpty
-                      ? _statusLabel(trade.status)
-                      : trade.statusLabel,
-                  color: _statusColor(trade.status),
-                ),
-              ),
-              DataCell(Text(_formatPrice(trade.price))),
-              DataCell(
-                Text(
-                  '${_formatPrice(trade.takeProfit)} / ${_formatPrice(trade.stopLoss)}',
-                ),
-              ),
-              DataCell(_ProfitLossText(trade: trade)),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _PaginationSummary extends StatelessWidget {
-  final int start;
-  final int end;
-  final int total;
-
-  const _PaginationSummary({
-    required this.start,
-    required this.end,
-    required this.total,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Text(
-      '$start-$end of $total',
-      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-        color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _PaginationControls extends StatelessWidget {
-  final int pageIndex;
-  final int pageCount;
-  final VoidCallback? onPrevious;
-  final VoidCallback? onNext;
-
-  const _PaginationControls({
-    required this.pageIndex,
-    required this.pageCount,
-    required this.onPrevious,
-    required this.onNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      children: [
-        Text(
-          'Page ${pageIndex + 1} of $pageCount',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-        ),
-        const Spacer(),
-        IconButton.filledTonal(
-          tooltip: 'Previous page',
-          onPressed: onPrevious,
-          icon: const Icon(Icons.chevron_left_rounded),
-        ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
-          tooltip: 'Next page',
-          onPressed: onNext,
-          icon: const Icon(Icons.chevron_right_rounded),
-        ),
-      ],
-    );
-  }
-}
-
-class _TradeListTile extends StatelessWidget {
-  final TradeModel trade;
-
-  const _TradeListTile({required this.trade});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: _TradeIdentity(trade: trade)),
-              _ProfitLossText(trade: trade),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _DirectionPill(direction: trade.direction),
-              _StatusPill(
-                label: trade.statusLabel.isEmpty
-                    ? _statusLabel(trade.status)
-                    : trade.statusLabel,
-                color: _statusColor(trade.status),
-              ),
-              _StatusPill(
-                label: 'TP ${_formatPrice(trade.takeProfit)}',
-                color: Colors.blueGrey,
-              ),
-              _StatusPill(
-                label: 'SL ${_formatPrice(trade.stopLoss)}',
-                color: Colors.indigo,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TradeIdentity extends StatelessWidget {
-  final TradeModel trade;
-
-  const _TradeIdentity({required this.trade});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            trade.symbol.substring(0, math.min(2, trade.symbol.length)),
-            style: TextStyle(
-              color: colorScheme.onSecondaryContainer,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              trade.channel,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            Text(
-              '${trade.ticket} - ${trade.symbol}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 class _Panel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -849,22 +532,6 @@ class _InlineStat extends StatelessWidget {
   }
 }
 
-class _DirectionPill extends StatelessWidget {
-  final TradeDirection direction;
-
-  const _DirectionPill({required this.direction});
-
-  @override
-  Widget build(BuildContext context) {
-    final isBuy = direction == TradeDirection.buy;
-
-    return _StatusPill(
-      label: isBuy ? 'Buy' : 'Sell',
-      color: isBuy ? Colors.teal : Colors.deepOrange,
-    );
-  }
-}
-
 class _StatusPill extends StatelessWidget {
   final String label;
   final Color color;
@@ -886,36 +553,6 @@ class _StatusPill extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
-    );
-  }
-}
-
-class _ProfitLossText extends StatelessWidget {
-  final TradeModel trade;
-
-  const _ProfitLossText({required this.trade});
-
-  @override
-  Widget build(BuildContext context) {
-    final isPositive = trade.netResult >= 0;
-    final color = isPositive ? Colors.teal : Colors.deepOrange;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          _formatCurrency(trade.netResult),
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Text(
-          trade.result.isEmpty ? (isPositive ? 'WIN' : 'LOSS') : trade.result,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
-        ),
-      ],
     );
   }
 }
@@ -1004,28 +641,6 @@ class _LineChartPainter extends CustomPainter {
   }
 }
 
-String _statusLabel(TradeStatus status) {
-  switch (status) {
-    case TradeStatus.open:
-      return 'Open';
-    case TradeStatus.closed:
-      return 'Closed';
-    case TradeStatus.pending:
-      return 'Pending';
-  }
-}
-
-Color _statusColor(TradeStatus status) {
-  switch (status) {
-    case TradeStatus.open:
-      return Colors.teal;
-    case TradeStatus.closed:
-      return Colors.blueGrey;
-    case TradeStatus.pending:
-      return Colors.amber.shade800;
-  }
-}
-
 String _formatCurrency(double value) {
   final prefix = value < 0 ? '-\$' : '\$';
   final absoluteValue = value.abs();
@@ -1048,12 +663,4 @@ double _sumTradesSince(List<TradeModel> trades, DateTime startDate) {
         return tradeDate != null && !tradeDate.isBefore(startDate);
       })
       .fold(0.0, (sum, trade) => sum + trade.netResult);
-}
-
-String _formatPrice(double value) {
-  if (value == 0) {
-    return '0';
-  }
-
-  return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2);
 }
