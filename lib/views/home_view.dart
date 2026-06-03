@@ -494,7 +494,7 @@ class _PerformancePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _PanelHeader(
-            title: 'Channel Win Rate',
+            title: 'Top 5 Channel Win Rate',
             action: _StatusPill(
               label: '${analytics.closedTrades} closed',
               color: Colors.blueGrey,
@@ -712,7 +712,7 @@ class _ColumnChartPainter extends CustomPainter {
       return;
     }
 
-    final visibleValues = values.take(6).toList();
+    final visibleValues = values.take(5).toList();
     final slotWidth = chartRect.width / visibleValues.length;
     final barPaint = Paint()..color = barColor;
     final barBackgroundPaint = Paint()

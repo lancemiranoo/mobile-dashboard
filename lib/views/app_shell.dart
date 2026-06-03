@@ -39,7 +39,7 @@ class _AppShellState extends State<AppShell> {
         return;
       }
 
-      context.go(index == 0 ? '/home' : '/history');
+      context.go(_pathForIndex(index));
       setState(() {
         _pendingIndex = null;
       });
@@ -49,7 +49,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    final selectedIndex = location == '/history' ? 1 : 0;
+    final selectedIndex = _indexForLocation(location);
     final pendingIndex = _pendingIndex;
 
     return Scaffold(
@@ -61,7 +61,7 @@ class _AppShellState extends State<AppShell> {
               ? KeyedSubtree(key: ValueKey(location), child: widget.child)
               : _TabSwitchingView(
                   key: ValueKey('switching-$pendingIndex'),
-                  label: pendingIndex == 0 ? 'Dashboard' : 'Trade History',
+                  label: _labelForIndex(pendingIndex),
                 ),
         ),
       ),
@@ -77,6 +77,11 @@ class _AppShellState extends State<AppShell> {
             label: 'Dashboard',
           ),
           NavigationDestination(
+            icon: Icon(Icons.leaderboard_outlined),
+            selectedIcon: Icon(Icons.leaderboard_rounded),
+            label: 'Leaderboard',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history_rounded),
             label: 'Trade History',
@@ -84,6 +89,40 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
     );
+  }
+
+  int _indexForLocation(String location) {
+    if (location == '/leaderboard') {
+      return 1;
+    }
+
+    if (location == '/history') {
+      return 2;
+    }
+
+    return 0;
+  }
+
+  String _pathForIndex(int index) {
+    switch (index) {
+      case 1:
+        return '/leaderboard';
+      case 2:
+        return '/history';
+      default:
+        return '/home';
+    }
+  }
+
+  String _labelForIndex(int index) {
+    switch (index) {
+      case 1:
+        return 'Leaderboard';
+      case 2:
+        return 'Trade History';
+      default:
+        return 'Dashboard';
+    }
   }
 }
 
