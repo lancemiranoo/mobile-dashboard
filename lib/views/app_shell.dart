@@ -84,7 +84,7 @@ class _AppShellState extends State<AppShell> {
           NavigationDestination(
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history_rounded),
-            label: 'Trade History',
+            label: 'History',
           ),
         ],
       ),
@@ -119,7 +119,7 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return 'Leaderboard';
       case 2:
-        return 'Trade History';
+        return 'History';
       default:
         return 'Dashboard';
     }
