@@ -55,15 +55,9 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 120),
-          child: pendingIndex == null
-              ? KeyedSubtree(key: ValueKey(location), child: widget.child)
-              : _TabSwitchingView(
-                  key: ValueKey('switching-$pendingIndex'),
-                  label: _labelForIndex(pendingIndex),
-                ),
-        ),
+        child: pendingIndex == null
+            ? widget.child
+            : _TabSwitchingView(label: _labelForIndex(pendingIndex)),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: pendingIndex ?? selectedIndex,
@@ -92,7 +86,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   int _indexForLocation(String location) {
-    if (location == '/leaderboard') {
+    if (location == '/leaderboard' || location == '/channel-trades') {
       return 1;
     }
 
@@ -129,7 +123,7 @@ class _AppShellState extends State<AppShell> {
 class _TabSwitchingView extends StatelessWidget {
   final String label;
 
-  const _TabSwitchingView({super.key, required this.label});
+  const _TabSwitchingView({required this.label});
 
   @override
   Widget build(BuildContext context) {

@@ -494,7 +494,7 @@ class _PerformancePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _PanelHeader(
-            title: 'Top 5 Channel Win Rate',
+            title: 'Top 5 Channels',
             action: _StatusPill(
               label: '${analytics.closedTrades} closed',
               color: Colors.blueGrey,

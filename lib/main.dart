@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'views/app_shell.dart';
 import 'views/channel_leaderboard_view.dart';
+import 'views/channel_trades_view.dart';
 import 'views/login_view.dart';
 import 'views/register_view.dart';
 import 'views/home_view.dart';
@@ -44,6 +45,13 @@ final _router = GoRouter(
         GoRoute(
           path: '/leaderboard',
           builder: (context, state) => const ChannelLeaderboardView(),
+        ),
+        GoRoute(
+          path: '/channel-trades',
+          builder: (context, state) {
+            final channel = state.uri.queryParameters['channel'] ?? '';
+            return ChannelTradesView(channel: channel);
+          },
         ),
       ],
     ),

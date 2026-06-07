@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../controllers/channel_leaderboard_controller.dart';
 import '../models/channel_leaderboard_entry.dart';
@@ -121,7 +122,10 @@ class _LeaderboardTable extends StatelessWidget {
             DataRow(
               cells: [
                 DataCell(Text('#${index + 1}')),
-                DataCell(_ChannelName(entry: entries[index])),
+                DataCell(
+                  _ChannelName(entry: entries[index], showHint: true),
+                  onTap: () => _openChannelTrades(context, entries[index]),
+                ),
                 DataCell(Text(_formatPercent(entries[index].winRate))),
                 DataCell(Text(entries[index].wins.toString())),
                 DataCell(Text(entries[index].closedTrades.toString())),
@@ -144,43 +148,47 @@ class _LeaderboardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+    return Material(
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
         borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        onTap: () => _openChannelTrades(context, entry),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _RankBadge(rank: rank),
-              const SizedBox(width: 12),
-              Expanded(child: _ChannelName(entry: entry)),
-              _NetResultText(value: entry.netResult),
+              Row(
+                children: [
+                  _RankBadge(rank: rank),
+                  const SizedBox(width: 12),
+                  Expanded(child: _ChannelName(entry: entry, showHint: true)),
+                  _NetResultText(value: entry.netResult),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _StatPill(
+                    label: 'Win Rate ${_formatPercent(entry.winRate)}',
+                    color: Colors.teal,
+                  ),
+                  _StatPill(
+                    label: '${entry.wins}W / ${entry.losses}L',
+                    color: Colors.blueGrey,
+                  ),
+                  _StatPill(
+                    label: '${entry.totalTrades} trades',
+                    color: Colors.indigo,
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _StatPill(
-                label: 'Win Rate ${_formatPercent(entry.winRate)}',
-                color: Colors.teal,
-              ),
-              _StatPill(
-                label: '${entry.wins}W / ${entry.losses}L',
-                color: Colors.blueGrey,
-              ),
-              _StatPill(
-                label: '${entry.totalTrades} trades',
-                color: Colors.indigo,
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -188,8 +196,9 @@ class _LeaderboardCard extends StatelessWidget {
 
 class _ChannelName extends StatelessWidget {
   final ChannelLeaderboardEntry entry;
+  final bool showHint;
 
-  const _ChannelName({required this.entry});
+  const _ChannelName({required this.entry, this.showHint = false});
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +217,9 @@ class _ChannelName extends StatelessWidget {
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
         Text(
-          '${entry.closedTrades} closed of ${entry.totalTrades}',
+          showHint
+              ? 'Tap to view ${entry.totalTrades} trades'
+              : '${entry.closedTrades} closed of ${entry.totalTrades}',
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -439,4 +450,8 @@ String _formatCurrency(double value) {
   }
 
   return '$prefix${absoluteValue.toStringAsFixed(2)}';
+}
+
+void _openChannelTrades(BuildContext context, ChannelLeaderboardEntry entry) {
+  context.push('/channel-trades?channel=${Uri.encodeComponent(entry.channel)}');
 }

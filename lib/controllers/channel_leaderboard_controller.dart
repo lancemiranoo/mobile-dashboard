@@ -15,9 +15,11 @@ List<ChannelLeaderboardEntry> _buildLeaderboard(List<TradeModel> trades) {
   final closedByChannel = <String, int>{};
   final winsByChannel = <String, int>{};
   final netByChannel = <String, double>{};
+  final labelsByChannel = <String, String>{};
 
   for (final trade in trades) {
-    final channel = trade.channel.trim().isEmpty ? 'Unknown' : trade.channel;
+    final channel = _channelKey(trade.channel);
+    labelsByChannel.putIfAbsent(channel, () => _channelLabel(trade.channel));
     final isClosed = trade.status == TradeStatus.closed;
     final isWin =
         trade.result.toLowerCase().contains('win') || trade.netResult > 0;
@@ -41,7 +43,7 @@ List<ChannelLeaderboardEntry> _buildLeaderboard(List<TradeModel> trades) {
   final leaderboard =
       totalsByChannel.entries.map((entry) {
         return ChannelLeaderboardEntry(
-          channel: entry.key,
+          channel: labelsByChannel[entry.key] ?? entry.key,
           totalTrades: entry.value,
           closedTrades: closedByChannel[entry.key] ?? 0,
           wins: winsByChannel[entry.key] ?? 0,
@@ -62,4 +64,13 @@ List<ChannelLeaderboardEntry> _buildLeaderboard(List<TradeModel> trades) {
       });
 
   return leaderboard;
+}
+
+String _channelLabel(String value) {
+  final trimmedValue = value.trim();
+  return trimmedValue.isEmpty ? 'Unknown' : trimmedValue;
+}
+
+String _channelKey(String value) {
+  return _channelLabel(value).toLowerCase();
 }
