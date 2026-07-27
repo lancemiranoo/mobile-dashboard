@@ -2,9 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../controllers/auth_controller.dart';
 import '../models/trade_model.dart';
 import '../repositories/trade_repository.dart';
 
@@ -13,23 +11,7 @@ class HomeView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
-    final user = authState.value;
     final tradesAsync = ref.watch(tradeCollectionProvider);
-
-    ref.listen(authControllerProvider, (previous, next) {
-      if (!next.isLoading && !next.hasError && next.value == null) {
-        context.go('/login');
-      }
-    });
-
-    if (user == null) {
-      return const SizedBox.shrink();
-    }
-
-    final displayName = user.displayName.trim().isEmpty
-        ? user.email
-        : user.displayName.trim();
 
     return tradesAsync.when(
       loading: () => const _DashboardSkeleton(),
@@ -53,12 +35,7 @@ class HomeView extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _DashboardHeader(
-                      displayName: displayName,
-                      onLogout: () {
-                        ref.read(authControllerProvider.notifier).logout();
-                      },
-                    ),
+                    const _DashboardHeader(),
                     const SizedBox(height: 20),
                     _PerformancePanel(analytics: analytics),
                     const SizedBox(height: 20),
@@ -136,10 +113,7 @@ class ChannelWinRate {
 }
 
 class _DashboardHeader extends StatelessWidget {
-  final String displayName;
-  final VoidCallback onLogout;
-
-  const _DashboardHeader({required this.displayName, required this.onLogout});
+  const _DashboardHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +142,7 @@ class _DashboardHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Good day, $displayName!',
+                  'Good day, Trader!',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.titleLarge?.copyWith(
@@ -180,25 +154,6 @@ class _DashboardHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Tooltip(
-            message: 'Log out',
-            child: Material(
-              color: colorScheme.tertiaryContainer,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: onLogout,
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: Icon(
-                    Icons.logout_rounded,
-                    color: colorScheme.onTertiaryContainer,
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

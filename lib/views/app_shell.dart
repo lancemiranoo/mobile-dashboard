@@ -76,6 +76,11 @@ class _AppShellState extends State<AppShell> {
             label: 'Leaderboard',
           ),
           NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month_rounded),
+            label: 'Calendar',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history_rounded),
             label: 'History',
@@ -91,6 +96,10 @@ class _AppShellState extends State<AppShell> {
     }
 
     if (location == '/history') {
+      return 3;
+    }
+
+    if (location == '/calendar') {
       return 2;
     }
 
@@ -102,6 +111,8 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return '/leaderboard';
       case 2:
+        return '/calendar';
+      case 3:
         return '/history';
       default:
         return '/home';
@@ -113,6 +124,8 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return 'Leaderboard';
       case 2:
+        return 'Calendar';
+      case 3:
         return 'History';
       default:
         return 'Dashboard';

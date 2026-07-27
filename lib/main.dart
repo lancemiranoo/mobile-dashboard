@@ -6,10 +6,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'views/app_shell.dart';
 import 'views/channel_leaderboard_view.dart';
 import 'views/channel_trades_view.dart';
-import 'views/login_view.dart';
-import 'views/register_view.dart';
 import 'views/home_view.dart';
 import 'views/trade_history_view.dart';
+import 'views/calendar_view.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -27,13 +26,8 @@ void main() async {
 }
 
 final _router = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/home',
   routes: [
-    GoRoute(path: '/login', builder: (context, state) => const LoginView()),
-    GoRoute(
-      path: '/register',
-      builder: (context, state) => const RegisterView(),
-    ),
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),
       routes: [
@@ -41,6 +35,10 @@ final _router = GoRouter(
         GoRoute(
           path: '/history',
           builder: (context, state) => const TradeHistoryView(),
+        ),
+        GoRoute(
+          path: '/calendar',
+          builder: (context, state) => const CalendarView(),
         ),
         GoRoute(
           path: '/leaderboard',
