@@ -6,7 +6,7 @@ import '../repositories/trade_repository.dart';
 
 final profitLossCalendarProvider =
     Provider.autoDispose<AsyncValue<ProfitLossCalendarModel>>((ref) {
-      final trades = ref.watch(tradeCollectionProvider);
+      final trades = ref.watch(calendarTradeCollectionProvider);
       return trades.whenData(_buildCalendar);
     });
 
@@ -14,7 +14,7 @@ ProfitLossCalendarModel _buildCalendar(List<TradeModel> trades) {
   final dailyNet = <DateTime, double>{};
 
   for (final trade in trades) {
-    final date = (trade.uploadedAt ?? trade.timestamp)?.toLocal();
+    final date = (trade.timestamp ?? trade.uploadedAt)?.toLocal();
     if (date == null) continue;
 
     final day = DateTime(date.year, date.month, date.day);

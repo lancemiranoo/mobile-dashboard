@@ -13,6 +13,11 @@ final tradeCollectionProvider = StreamProvider.autoDispose<List<TradeModel>>((
   return ref.watch(tradeRepositoryProvider).watchTrades();
 });
 
+final calendarTradeCollectionProvider =
+    StreamProvider.autoDispose<List<TradeModel>>((ref) {
+      return ref.watch(tradeRepositoryProvider).watchCalendarTrades();
+    });
+
 class TradeRepository {
   final FirebaseFirestore _firestore;
 
@@ -24,6 +29,15 @@ class TradeRepository {
         .collection('trades')
         .orderBy('uploadedAt', descending: true)
         .limit(50)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs.map(TradeModel.fromFirestore).toList(),
+        );
+  }
+
+  Stream<List<TradeModel>> watchCalendarTrades() {
+    return _firestore
+        .collection('live-trades')
         .snapshots()
         .map(
           (snapshot) => snapshot.docs.map(TradeModel.fromFirestore).toList(),

@@ -7,6 +7,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /live-trades/{tradeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /users/{userId} {
       allow read, write: if false;
     }
