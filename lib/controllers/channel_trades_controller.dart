@@ -5,7 +5,7 @@ import '../repositories/trade_repository.dart';
 
 final channelTradesProvider = Provider.autoDispose
     .family<AsyncValue<List<TradeModel>>, String>((ref, channel) {
-      final trades = ref.watch(tradeCollectionProvider);
+      final trades = ref.watch(dashboardTradeCollectionProvider);
       return trades.whenData((items) {
         final normalizedChannel = _channelKey(channel);
         final channelTrades =

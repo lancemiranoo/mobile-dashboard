@@ -6,7 +6,7 @@ import '../repositories/trade_repository.dart';
 
 final channelLeaderboardProvider =
     Provider.autoDispose<AsyncValue<List<ChannelLeaderboardEntry>>>((ref) {
-      final trades = ref.watch(tradeCollectionProvider);
+      final trades = ref.watch(dashboardTradeCollectionProvider);
       return trades.whenData(_buildLeaderboard);
     });
 

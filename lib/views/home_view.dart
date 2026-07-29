@@ -11,7 +11,7 @@ class HomeView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tradesAsync = ref.watch(tradeCollectionProvider);
+    final tradesAsync = ref.watch(dashboardTradeCollectionProvider);
 
     return tradesAsync.when(
       loading: () => const _DashboardSkeleton(),

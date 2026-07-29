@@ -24,6 +24,8 @@ Thumbs.db
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.dart_localappdata/
+.dart_appdata/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
