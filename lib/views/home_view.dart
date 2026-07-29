@@ -134,7 +134,7 @@ class _DashboardHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'BOT DASHBOARD',
+                  'TRADING BOT DASHBOARD',
                   style: textTheme.labelSmall?.copyWith(
                     color: colorScheme.onPrimary.withValues(alpha: 0.78),
                     fontWeight: FontWeight.w800,
